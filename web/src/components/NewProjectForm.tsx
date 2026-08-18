@@ -44,23 +44,30 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm" autoComplete="off">
       <label className="flex flex-col gap-1.5">
         Address
-        <input required className={inputClass} value={form.address} onChange={(e) => set('address', e.target.value)} />
+        <input required autoComplete="off" className={inputClass} value={form.address} onChange={(e) => set('address', e.target.value)} />
       </label>
       <label className="flex flex-col gap-1.5">
         City
-        <input required className={inputClass} value={form.city} onChange={(e) => set('city', e.target.value)} />
+        <input required autoComplete="off" className={inputClass} value={form.city} onChange={(e) => set('city', e.target.value)} />
       </label>
       <label className="flex flex-col gap-1.5">
         Client name
-        <input required className={inputClass} value={form.client_name} onChange={(e) => set('client_name', e.target.value)} />
+        <input
+          required
+          autoComplete="off"
+          className={inputClass}
+          value={form.client_name}
+          onChange={(e) => set('client_name', e.target.value)}
+        />
       </label>
       <label className="flex flex-col gap-1.5">
         Client contact <span className="text-text-muted">(optional)</span>
         <input
           placeholder="Phone or email"
+          autoComplete="off"
           className={inputClass}
           value={form.client_contact}
           onChange={(e) => set('client_contact', e.target.value)}
@@ -68,11 +75,19 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
       </label>
       <label className="flex flex-col gap-1.5">
         Sq ft
-        <input type="number" min="0" className={inputClass} value={form.sqft} onChange={(e) => set('sqft', e.target.value)} />
+        <input
+          type="number"
+          min="0"
+          inputMode="numeric"
+          autoComplete="off"
+          className={inputClass}
+          value={form.sqft}
+          onChange={(e) => set('sqft', e.target.value)}
+        />
       </label>
       <label className="flex flex-col gap-1.5">
         Species / product
-        <input className={inputClass} value={form.species} onChange={(e) => set('species', e.target.value)} />
+        <input autoComplete="off" className={inputClass} value={form.species} onChange={(e) => set('species', e.target.value)} />
       </label>
       <label className="flex flex-col gap-1.5">
         Stage
@@ -85,7 +100,7 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
         </select>
       </label>
       <label className="flex flex-col gap-1.5">
-        People on this job
+        Crew on this job
         <PeoplePicker people={team} selected={memberIds} onChange={setMemberIds} />
       </label>
 

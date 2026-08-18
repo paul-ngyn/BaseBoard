@@ -93,6 +93,10 @@ reorder) — not something you edit in code.
 
 ## What's not built yet
 
+- **TODO: clickable job detail view with a timeline.** Right now editing a
+  project happens inline in the Projects list/cards. A dedicated per-job page
+  (click a row/card to open it) showing a timeline — stage history, schedule
+  events, notes — would give more room than the table/card view allows.
 - **Real map integration.** The Map view shows the design's stylized
   placeholder SVG map with pins positioned from project lat/lng. Wiring a
   real provider (Mapbox / Google / Leaflet) needs you to pick one and

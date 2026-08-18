@@ -50,7 +50,7 @@ export function InviteMemberForm({ onDone, initial, promoteOnly }: InviteMemberF
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm" autoComplete="off">
       {!promoteOnly && (
         <div className="flex gap-1 rounded-md bg-surface p-1">
           <button
@@ -77,13 +77,14 @@ export function InviteMemberForm({ onDone, initial, promoteOnly }: InviteMemberF
 
       <label className="flex flex-col gap-1.5">
         Name
-        <input required autoFocus className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
+        <input required autoFocus autoComplete="off" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
       <label className="flex flex-col gap-1.5">
         Email {mode === 'direct' && <span className="text-text-muted">(optional)</span>}
         <input
           required={mode === 'email'}
           type="email"
+          autoComplete="off"
           className={inputClass}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -91,7 +92,13 @@ export function InviteMemberForm({ onDone, initial, promoteOnly }: InviteMemberF
       </label>
       <label className="flex flex-col gap-1.5">
         Role <span className="text-text-muted">(optional)</span>
-        <input placeholder="e.g. Installer" className={inputClass} value={role} onChange={(e) => setRole(e.target.value)} />
+        <input
+          placeholder="e.g. Installer"
+          autoComplete="off"
+          className={inputClass}
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+        />
       </label>
 
       {!promoteOnly && mode === 'direct' && (

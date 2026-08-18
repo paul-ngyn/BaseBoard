@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PencilSimple } from '@phosphor-icons/react';
 import { Modal } from './Modal';
 import { PeoplePicker } from './PeoplePicker';
 import { Button } from './Button';
@@ -25,14 +26,17 @@ export function ProjectPeopleCell({ projectId, people }: { projectId: string; pe
     <>
       <button
         onClick={open}
-        className="w-full cursor-pointer truncate border-none bg-transparent p-0 text-left text-[13px] text-[#4a3d30] hover:text-accent"
+        className="group inline-flex w-full cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left text-[13px] text-[#4a3d30] hover:text-accent"
         title={people.map((p) => p.name).join(', ') || 'Unassigned'}
       >
-        {people.length ? people.map((p) => p.name).join(', ') : <span className="text-text-muted">— assign —</span>}
+        <span className="truncate">
+          {people.length ? people.map((p) => p.name).join(', ') : <span className="text-text-muted">— assign —</span>}
+        </span>
+        <PencilSimple size={11} className="flex-none text-text-muted opacity-0 group-hover:opacity-100" />
       </button>
 
       {editing && (
-        <Modal title="People on this job" onClose={() => setEditing(false)}>
+        <Modal title="Crew on this job" onClose={() => setEditing(false)}>
           <div className="flex flex-col gap-3 text-sm">
             <PeoplePicker people={team} selected={selected} onChange={setSelected} />
             <Button variant="primary" onClick={handleSave} disabled={updateMembers.isPending} className="justify-center">

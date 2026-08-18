@@ -118,6 +118,19 @@ export function useUpdateProjectTime() {
   });
 }
 
+export function useUpdateProjectField() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Project>) => {
+      const { error } = await supabase.from('projects').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
 export function useUpdateProjectStage() {
   const queryClient = useQueryClient();
   return useMutation({

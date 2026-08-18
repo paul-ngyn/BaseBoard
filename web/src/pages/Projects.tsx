@@ -6,8 +6,10 @@ import { NewProjectForm } from '../components/NewProjectForm';
 import { StageSelect } from '../components/StageSelect';
 import { ProjectPeopleCell } from '../components/ProjectPeopleCell';
 import { ProjectDateCell } from '../components/ProjectDateCell';
-import { useDeleteProject, useProjects, useStages } from '../hooks/useData';
+import { EditableField } from '../components/EditableField';
+import { useDeleteProject, useProjects, useStages, useUpdateProjectField } from '../hooks/useData';
 import { getErrorMessage } from '../lib/errors';
+import type { Project } from '../types/database';
 
 export function Projects() {
   const { data: projects = [], isLoading } = useProjects();
@@ -15,12 +17,18 @@ export function Projects() {
   const [search, setSearch] = useState('');
   const [showNew, setShowNew] = useState(false);
   const deleteProject = useDeleteProject();
+  const updateField = useUpdateProjectField();
 
   function handleDelete(id: string, address: string) {
     if (!window.confirm(`Delete "${address}"? This can't be undone — its schedule events go with it.`)) return;
     deleteProject.mutate(id, {
       onError: (err) => window.alert(getErrorMessage(err, 'Failed to delete project')),
     });
+  }
+
+  function saveField(id: string, key: keyof Project, value: string) {
+    const parsed = key === 'sqft' ? Number(value) || 0 : key === 'client_contact' ? value.trim() || null : value;
+    updateField.mutate({ id, [key]: parsed });
   }
 
   const doneNames = useMemo(() => new Set(stages.filter((s) => s.is_done).map((s) => s.id)), [stages]);
@@ -73,11 +81,22 @@ export function Projects() {
               style={{ borderLeft: `4px solid ${stage?.bg_color ?? '#c39a5a'}` }}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-sm leading-tight font-semibold">{p.address}</div>
-                  <div className="mt-0.5 text-xs text-text-secondary-alt">
-                    {p.city} · {p.client_name}
-                    {p.client_contact && <span> · {p.client_contact}</span>}
+                <div className="min-w-0 flex-1">
+                  <EditableField
+                    value={p.address}
+                    onSave={(v) => saveField(p.id, 'address', v)}
+                    className="text-sm leading-tight font-semibold"
+                  />
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-text-secondary-alt">
+                    <EditableField value={p.city} onSave={(v) => saveField(p.id, 'city', v)} />
+                    <span>·</span>
+                    <EditableField value={p.client_name} onSave={(v) => saveField(p.id, 'client_name', v)} />
+                    <span>·</span>
+                    <EditableField
+                      value={p.client_contact ?? ''}
+                      onSave={(v) => saveField(p.id, 'client_contact', v)}
+                      placeholder="add contact"
+                    />
                   </div>
                 </div>
                 <button
@@ -89,18 +108,36 @@ export function Projects() {
                 </button>
               </div>
 
-              <div className="mt-2.5 flex items-center justify-between text-[13px] text-[#4a3d30]">
-                <span>{p.species || '—'}</span>
-                <span className="tabular-nums">{p.sqft ? `${p.sqft.toLocaleString('en-US')} sq ft` : ''}</span>
-              </div>
-
               <div className="mt-2.5 flex items-center justify-between gap-2">
-                <ProjectPeopleCell projectId={p.id} people={p.project_members.map((pm) => pm.team_members)} />
                 {stage ? <StageSelect projectId={p.id} currentStageId={p.stage_id} stages={stages} /> : null}
+                <ProjectDateCell projectId={p.id} date={p.start_date} time={p.next_time} />
               </div>
 
-              <div className="mt-2.5 border-t border-black/8 pt-2.5">
-                <ProjectDateCell projectId={p.id} date={p.start_date} time={p.next_time} />
+              <div className="mt-2.5 flex items-center gap-1.5 text-[13px]">
+                <span className="flex-none font-semibold text-text-muted">Crew:</span>
+                <ProjectPeopleCell projectId={p.id} people={p.project_members.map((pm) => pm.team_members)} />
+              </div>
+
+              <div className="mt-2 flex flex-col gap-1.5 border-t border-black/8 pt-2.5 text-[13px] text-[#4a3d30]">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex-none font-semibold text-text-muted">Sqft:</span>
+                  <EditableField
+                    value={String(p.sqft || '')}
+                    onSave={(v) => saveField(p.id, 'sqft', v)}
+                    type="number"
+                    placeholder="—"
+                    className="tabular-nums"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex-none font-semibold text-text-muted">Species / Materials:</span>
+                  <EditableField
+                    value={p.species}
+                    onSave={(v) => saveField(p.id, 'species', v)}
+                    placeholder="—"
+                    className="min-w-0"
+                  />
+                </div>
               </div>
             </div>
           );
@@ -111,22 +148,22 @@ export function Projects() {
       <div className="hidden overflow-x-auto px-[30px] pb-[30px] lg:block">
         <table className="w-full min-w-[720px] table-fixed border-collapse text-left">
           <colgroup>
-            <col style={{ width: '30%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '13%' }} />
+            <col style={{ width: '26%' }} />
             <col style={{ width: '12%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '7%' }} />
             <col style={{ width: '17%' }} />
-            <col style={{ width: '12%' }} />
             <col style={{ width: '4%' }} />
           </colgroup>
           <thead>
             <tr className="border-b border-black/10 text-[11px] tracking-[0.06em] text-text-muted uppercase">
               <th className="py-2.5 pr-3 font-semibold">Project</th>
-              <th className="py-2.5 px-3 text-right font-semibold">Sq Ft</th>
-              <th className="py-2.5 px-3 font-semibold">Species / product</th>
-              <th className="py-2.5 px-3 font-semibold">People</th>
-              <th className="py-2.5 px-3 font-semibold">Next date</th>
               <th className="py-2.5 px-3 font-semibold">Stage</th>
+              <th className="py-2.5 px-3 font-semibold">Next date</th>
+              <th className="py-2.5 px-3 font-semibold">Crew</th>
+              <th className="py-2.5 px-3 text-right font-semibold">Sq Ft</th>
+              <th className="py-2.5 px-3 font-semibold">Species / Materials</th>
               <th className="py-2.5 pl-3"></th>
             </tr>
           </thead>
@@ -136,22 +173,43 @@ export function Projects() {
               return (
                 <tr key={p.id} className="border-b border-black/10">
                   <td className="py-3 pr-3 pl-3.5" style={{ borderLeft: `4px solid ${stage?.bg_color ?? '#c39a5a'}` }}>
-                    <div className="text-sm leading-tight font-semibold">{p.address}</div>
-                    <div className="mt-0.5 text-xs text-text-secondary-alt">
-                      {p.city} · {p.client_name}
-                      {p.client_contact && <span> · {p.client_contact}</span>}
+                    <EditableField
+                      value={p.address}
+                      onSave={(v) => saveField(p.id, 'address', v)}
+                      className="text-sm leading-tight font-semibold"
+                    />
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-text-secondary-alt">
+                      <EditableField value={p.city} onSave={(v) => saveField(p.id, 'city', v)} />
+                      <span>·</span>
+                      <EditableField value={p.client_name} onSave={(v) => saveField(p.id, 'client_name', v)} />
+                      <span>·</span>
+                      <EditableField
+                        value={p.client_contact ?? ''}
+                        onSave={(v) => saveField(p.id, 'client_contact', v)}
+                        placeholder="add contact"
+                      />
                     </div>
                   </td>
-                  <td className="tabular-nums px-3 py-3 text-right text-[13px] text-[#4a3d30]">{p.sqft.toLocaleString('en-US')}</td>
-                  <td className="px-3 py-3 text-[13px] text-[#4a3d30]">{p.species}</td>
                   <td className="px-3 py-3">
-                    <ProjectPeopleCell projectId={p.id} people={p.project_members.map((pm) => pm.team_members)} />
+                    {stage ? <StageSelect projectId={p.id} currentStageId={p.stage_id} stages={stages} /> : null}
                   </td>
                   <td className="px-3 py-3">
                     <ProjectDateCell projectId={p.id} date={p.start_date} time={p.next_time} />
                   </td>
                   <td className="px-3 py-3">
-                    {stage ? <StageSelect projectId={p.id} currentStageId={p.stage_id} stages={stages} /> : null}
+                    <ProjectPeopleCell projectId={p.id} people={p.project_members.map((pm) => pm.team_members)} />
+                  </td>
+                  <td className="px-3 py-3 text-right text-[13px] text-[#4a3d30]">
+                    <EditableField
+                      value={String(p.sqft || '')}
+                      onSave={(v) => saveField(p.id, 'sqft', v)}
+                      type="number"
+                      placeholder="—"
+                      className="tabular-nums justify-end"
+                    />
+                  </td>
+                  <td className="px-3 py-3 text-[13px] text-[#4a3d30]">
+                    <EditableField value={p.species} onSave={(v) => saveField(p.id, 'species', v)} />
                   </td>
                   <td className="py-3 pl-3 text-right">
                     <button
