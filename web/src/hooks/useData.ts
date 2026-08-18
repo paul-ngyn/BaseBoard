@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { Project, Stage } from '../types/database';
+import type { Project, Stage, TeamMember } from '../types/database';
 
 export function useStages() {
   return useQuery({
@@ -13,24 +13,13 @@ export function useStages() {
   });
 }
 
-export function useCrews() {
-  return useQuery({
-    queryKey: ['crews'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('crews').select('*').order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 export function useTeam() {
   return useQuery({
     queryKey: ['team_members'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('team_members').select('*, crews(name)').order('name');
+      const { data, error } = await supabase.from('team_members').select('*').order('name');
       if (error) throw error;
-      return data as (import('../types/database').TeamMember & { crews: { name: string } | null })[];
+      return data as TeamMember[];
     },
   });
 }
@@ -46,56 +35,85 @@ export function useSettings() {
   });
 }
 
+export type ProjectWithMembers = Project & { project_members: { team_members: TeamMember }[] };
+
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('*, crews(name)')
+        .select('*, project_members(team_members(*))')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as (Project & { crews: { name: string } | null })[];
+      return data as ProjectWithMembers[];
     },
   });
 }
 
-function mondayOf(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay(); // 0 = Sun
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 function toISODate(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function useWeekSchedule(anchor: Date = new Date()) {
-  const monday = mondayOf(anchor);
-  const friday = new Date(monday);
-  friday.setDate(friday.getDate() + 4);
-  const mondayISO = toISODate(monday);
-  const fridayISO = toISODate(friday);
+// Full calendar-grid range for a month: from the Sunday on/before the 1st
+// through the Saturday on/after the last day, so the grid always has
+// complete weeks.
+function monthGridRange(monthAnchor: Date) {
+  const firstOfMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1);
+  const lastOfMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  const gridEnd = new Date(lastOfMonth);
+  gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+  return { firstOfMonth, lastOfMonth, gridStart, gridEnd };
+}
 
-  return useQuery({
-    queryKey: ['schedule_events', mondayISO],
+export function useMonthSchedule(monthAnchor: Date) {
+  const { gridStart, gridEnd } = monthGridRange(monthAnchor);
+  const startISO = toISODate(gridStart);
+  const endISO = toISODate(gridEnd);
+
+  const query = useQuery({
+    queryKey: ['schedule_events', startISO, endISO],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('schedule_events')
         .select('*, projects(address, stage_id)')
-        .gte('event_date', mondayISO)
-        .lte('event_date', fridayISO)
+        .gte('event_date', startISO)
+        .lte('event_date', endISO)
         .order('time_label');
       if (error) throw error;
-      return {
-        monday,
-        events: data as (import('../types/database').ScheduleEvent & {
-          projects: { address: string; stage_id: string } | null;
-        })[],
-      };
+      return data as (import('../types/database').ScheduleEvent & {
+        projects: { address: string; stage_id: string } | null;
+      })[];
+    },
+  });
+
+  return { ...query, gridStart, gridEnd };
+}
+
+export function useUpdateProjectDate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, date }: { projectId: string; date: string | null }) => {
+      const { error } = await supabase.from('projects').update({ start_date: date }).eq('id', projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+export function useUpdateProjectTime() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, time }: { projectId: string; time: string | null }) => {
+      const { error } = await supabase.from('projects').update({ next_time: time }).eq('id', projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }
@@ -116,9 +134,48 @@ export function useUpdateProjectStage() {
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (project: Partial<Project>) => {
-      const { error } = await supabase.from('projects').insert(project);
+    mutationFn: async ({ memberIds, ...project }: Partial<Project> & { memberIds: string[] }) => {
+      const { data, error } = await supabase.from('projects').insert(project).select('id').single();
       if (error) throw error;
+      if (memberIds.length) {
+        const { error: memberError } = await supabase
+          .from('project_members')
+          .insert(memberIds.map((team_member_id) => ({ project_id: data.id, team_member_id })));
+        if (memberError) throw memberError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('projects').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+// Replaces the full set of people assigned to a project.
+export function useUpdateProjectMembers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, memberIds }: { projectId: string; memberIds: string[] }) => {
+      const { error: deleteError } = await supabase.from('project_members').delete().eq('project_id', projectId);
+      if (deleteError) throw deleteError;
+      if (memberIds.length) {
+        const { error: insertError } = await supabase
+          .from('project_members')
+          .insert(memberIds.map((team_member_id) => ({ project_id: projectId, team_member_id })));
+        if (insertError) throw insertError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -130,7 +187,24 @@ export function useInviteMember() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: { email: string; name: string; role: string }) => {
-      const { data, error } = await supabase.functions.invoke('invite-member', { body: input });
+      const { data, error } = await supabase.functions.invoke('invite-member', { body: { ...input, mode: 'email' } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team_members'] });
+    },
+  });
+}
+
+// Adds a roster-only team member — no login, same thing as adding a row
+// directly in Supabase's Table Editor. No edge function needed since there's
+// no auth account to create.
+export function useAddRosterMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { name: string; email?: string | null; role?: string | null; access_level: string }) => {
+      const { data, error } = await supabase.from('team_members').insert(input).select('id').single();
       if (error) throw error;
       return data;
     },
@@ -143,12 +217,26 @@ export function useInviteMember() {
 export function useUpdateTeamMember() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; crew_id?: string | null; access_level?: string; role?: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; access_level?: string; role?: string }) => {
       const { error } = await supabase.from('team_members').update(updates).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team_members'] });
+    },
+  });
+}
+
+export function useDeleteTeamMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('team_members').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team_members'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }
@@ -161,6 +249,57 @@ export function useReorderStages() {
       const results = await Promise.all(updates);
       const failed = results.find((r) => r.error);
       if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stages'] });
+    },
+  });
+}
+
+export function useUpdateStage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; bg_color?: string; fg_color?: string }) => {
+      const { error } = await supabase.from('stages').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stages'] });
+    },
+  });
+}
+
+export function useCreateStage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (currentStages: Stage[]) => {
+      const nextPosition = currentStages.length ? Math.max(...currentStages.map((s) => s.position)) + 1 : 1;
+      const { error } = await supabase.from('stages').insert({
+        position: nextPosition,
+        name: 'New stage',
+        bg_color: '#8a6d3b',
+        fg_color: '#ffffff',
+        is_done: false,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stages'] });
+    },
+  });
+}
+
+export function useDeleteStage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('stages').delete().eq('id', id);
+      if (error) {
+        if (error.code === '23503') {
+          throw new Error('Projects are still on this stage — move them to a different stage first.');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stages'] });

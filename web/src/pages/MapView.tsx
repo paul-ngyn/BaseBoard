@@ -36,13 +36,13 @@ export function MapView() {
   const positions = usePinPositions(projects);
 
   return (
-    <div className="px-[30px] pt-[26px] pb-[30px]">
+    <div className="px-4 pt-[26px] pb-[30px] lg:px-[30px]">
       <h2 className="m-0 mb-1 text-[29px]">Map</h2>
       <p className="mt-0 mb-5 text-[13px] text-text-secondary">
         Job sites across the service area · placeholder — wire to a real map service (Mapbox / Google / Leaflet)
       </p>
 
-      <div className="grid grid-cols-[1.7fr_1fr] gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.7fr_1fr]">
         <div className="relative h-[440px] overflow-hidden rounded-xl border border-black/12 bg-[#e9e0cf]">
           <svg width="100%" height="100%" viewBox="0 0 600 440" preserveAspectRatio="xMidYMid slice" className="absolute inset-0">
             <rect width="600" height="440" fill="#e9e0cf" />

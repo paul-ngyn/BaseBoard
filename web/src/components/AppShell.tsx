@@ -1,7 +1,6 @@
-import { NavLink } from 'react-router-dom';
-import type { ReactNode } from 'react';
-import { Table, SquareHalf, CalendarBlank, MapPin, GearSix } from '@phosphor-icons/react';
-import { BrandMark } from './BrandMark';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { List, Table, SquareHalf, CalendarBlank, MapPin, GearSix } from '@phosphor-icons/react';
 import { Avatar } from './Avatar';
 import { useAuth } from '../hooks/useAuth';
 
@@ -15,16 +14,38 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { member, signOut } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => setSidebarOpen(false), [location.pathname]);
 
   return (
-    <div className="flex min-h-screen bg-bg">
-      <div className="flex w-[224px] flex-none flex-col gap-1.5 border-r border-black/10 bg-sidebar px-4 py-[22px]">
-        <div className="flex items-center gap-[11px] px-1.5 pb-5">
-          <BrandMark />
-          <div className="flex flex-col leading-none">
-            <span className="font-serif text-[19px] font-semibold tracking-[-0.01em]">Baseboard</span>
-            <span className="mt-[3px] text-[10px] tracking-[0.12em] text-text-muted uppercase">Flooring PM</span>
-          </div>
+    <div className="flex min-h-screen flex-col bg-bg lg:flex-row">
+      {/* Mobile top bar — hidden at lg and up, where the sidebar is always visible. */}
+      <div className="flex items-center gap-3 border-b border-black/10 bg-sidebar px-4 py-3 lg:hidden">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+          className="cursor-pointer rounded border-none bg-transparent p-1 text-accent"
+        >
+          <List size={22} weight="bold" />
+        </button>
+        <span className="font-serif text-base font-semibold">Baseboard</span>
+      </div>
+
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      )}
+
+      <div
+        className={`fixed inset-y-0 left-0 z-40 flex w-[224px] flex-none -translate-x-full flex-col gap-1.5 border-r border-black/10 bg-sidebar px-4 py-[22px] transition-transform duration-200 lg:relative lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : ''
+        }`}
+      >
+        <div className="flex flex-col px-1.5 pb-5 leading-none">
+          <span className="font-serif text-[19px] font-semibold tracking-[-0.01em]">Baseboard</span>
+          <span className="mt-[3px] text-[10px] tracking-[0.12em] text-text-muted uppercase">Flooring PM</span>
         </div>
 
         {NAV.map(({ to, label, icon: Icon }) => (

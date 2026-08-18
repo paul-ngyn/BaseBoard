@@ -12,7 +12,7 @@ export function Today() {
   const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
 
   const jobs = data?.jobs ?? [];
-  const stats = data?.stats ?? { stops: 0, milesToDrive: 0, crewCount: 0 };
+  const stats = data?.stats ?? { stops: 0, milesToDrive: 0, peopleCount: 0 };
 
   return (
     <div>
@@ -32,8 +32,8 @@ export function Today() {
             <div className="text-[11px] opacity-80">to drive</div>
           </div>
           <div>
-            <div className="font-serif text-[22px] font-semibold">{stats.crewCount}</div>
-            <div className="text-[11px] opacity-80">crew</div>
+            <div className="font-serif text-[22px] font-semibold">{stats.peopleCount}</div>
+            <div className="text-[11px] opacity-80">people</div>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@ export function Today() {
             </div>
             <div className="mt-3.5 flex items-center justify-between border-t border-black/10 pt-3">
               <div className="mr-2 flex-1 text-xs text-text-secondary-alt">
-                {j.crew} · {j.note}
+                {j.people} · {j.note}
               </div>
               <button
                 onClick={() => openDirections(j.addr, j.city)}

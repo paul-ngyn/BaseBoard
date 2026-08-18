@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { MetricCard } from '../components/MetricCard';
 import { useProjects, useStages } from '../hooks/useData';
-import { money } from '../lib/format';
 
 const ON_SITE_STAGES = new Set(['Install In Progress', 'Sanding / Finishing']);
 
@@ -15,14 +14,12 @@ export function Dashboard() {
   const active = projects.filter((p) => !doneIds.has(p.stage_id));
   const onSite = active.filter((p) => ON_SITE_STAGES.has(stageById.get(p.stage_id)?.name ?? '')).length;
   const sqftActive = active.reduce((a, p) => a + p.sqft, 0);
-  const pipeline = active.reduce((a, p) => a + Number(p.budget), 0);
   const towns = new Set(active.map((p) => p.city)).size;
 
   const metrics = [
     { label: 'Active jobs', value: String(active.length), sub: `across ${towns} town${towns === 1 ? '' : 's'}` },
     { label: 'On site now', value: String(onSite), sub: 'installing / finishing' },
     { label: 'Sq ft booked', value: sqftActive.toLocaleString('en-US'), sub: 'in active jobs' },
-    { label: 'Pipeline', value: money(pipeline), sub: 'unbilled value' },
   ];
 
   const stageDist = useMemo(() => {
@@ -38,7 +35,8 @@ export function Dashboard() {
     const withoutDates = active.filter((p) => !p.start_date);
     return [...withDates, ...withoutDates].slice(0, 4).map((p) => {
       const stage = stageById.get(p.stage_id);
-      const detail = p.crews?.name ? `${p.crews.name} · ${p.species}` : `${stage?.name ?? ''} · follow up`;
+      const names = p.project_members.map((pm) => pm.team_members.name);
+      const detail = names.length ? `${names.join(', ')} · ${p.species}` : `${stage?.name ?? ''} · follow up`;
       const when = p.start_date
         ? new Date(p.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : 'TBD';
@@ -47,17 +45,17 @@ export function Dashboard() {
   }, [active, stageById]);
 
   return (
-    <div className="px-[30px] pt-[26px] pb-[30px]">
+    <div className="px-4 pt-[26px] pb-[30px] lg:px-[30px]">
       <h2 className="m-0 mb-1 text-[29px]">Dashboard</h2>
       <p className="mt-0 mb-[22px] text-[13px] text-text-secondary">This week at a glance</p>
 
-      <div className="mb-7 grid grid-cols-4 gap-4">
+      <div className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {metrics.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}
       </div>
 
-      <div className="grid grid-cols-[1.3fr_1fr] gap-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.3fr_1fr]">
         <div>
           <h4 className="m-0 mb-3.5 text-base">Projects by stage</h4>
           <div className="flex flex-col gap-2.5">

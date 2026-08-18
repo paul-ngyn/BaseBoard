@@ -1,25 +1,26 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from './Button';
-import { useCreateProject, useCrews, useStages } from '../hooks/useData';
+import { PeoplePicker } from './PeoplePicker';
+import { useCreateProject, useStages, useTeam } from '../hooks/useData';
 
 const inputClass =
   'rounded-md border border-black/12 bg-surface px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-accent';
 
 export function NewProjectForm({ onDone }: { onDone: () => void }) {
   const { data: stages = [] } = useStages();
-  const { data: crews = [] } = useCrews();
+  const { data: team = [] } = useTeam();
   const createProject = useCreateProject();
 
   const [form, setForm] = useState({
     address: '',
     city: '',
     client_name: '',
+    client_contact: '',
     sqft: '',
     species: '',
-    crew_id: '',
-    budget: '',
     stage_id: '',
   });
+  const [memberIds, setMemberIds] = useState<string[]>([]);
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -33,11 +34,11 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
       address: form.address,
       city: form.city,
       client_name: form.client_name,
+      client_contact: form.client_contact.trim() || null,
       sqft: Number(form.sqft) || 0,
       species: form.species,
-      crew_id: form.crew_id || null,
-      budget: Number(form.budget) || 0,
       stage_id: stageId,
+      memberIds,
     });
     onDone();
   }
@@ -56,43 +57,37 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
         Client name
         <input required className={inputClass} value={form.client_name} onChange={(e) => set('client_name', e.target.value)} />
       </label>
-      <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1.5">
-          Sq ft
-          <input type="number" min="0" className={inputClass} value={form.sqft} onChange={(e) => set('sqft', e.target.value)} />
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5">
-          Budget
-          <input type="number" min="0" className={inputClass} value={form.budget} onChange={(e) => set('budget', e.target.value)} />
-        </label>
-      </div>
+      <label className="flex flex-col gap-1.5">
+        Client contact <span className="text-text-muted">(optional)</span>
+        <input
+          placeholder="Phone or email"
+          className={inputClass}
+          value={form.client_contact}
+          onChange={(e) => set('client_contact', e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        Sq ft
+        <input type="number" min="0" className={inputClass} value={form.sqft} onChange={(e) => set('sqft', e.target.value)} />
+      </label>
       <label className="flex flex-col gap-1.5">
         Species / product
         <input className={inputClass} value={form.species} onChange={(e) => set('species', e.target.value)} />
       </label>
-      <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1.5">
-          Crew
-          <select className={inputClass} value={form.crew_id} onChange={(e) => set('crew_id', e.target.value)}>
-            <option value="">—</option>
-            {crews.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5">
-          Stage
-          <select className={inputClass} value={form.stage_id} onChange={(e) => set('stage_id', e.target.value)}>
-            {stages.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <label className="flex flex-col gap-1.5">
+        Stage
+        <select className={inputClass} value={form.stage_id} onChange={(e) => set('stage_id', e.target.value)}>
+          {stages.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1.5">
+        People on this job
+        <PeoplePicker people={team} selected={memberIds} onChange={setMemberIds} />
+      </label>
 
       <Button variant="primary" type="submit" disabled={createProject.isPending} className="mt-2 justify-center">
         {createProject.isPending ? 'Creating…' : 'Create project'}

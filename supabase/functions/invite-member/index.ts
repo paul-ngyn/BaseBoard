@@ -1,10 +1,15 @@
 // Supabase Edge Function: invite-member
 //
-// Invites a new team member by email. Runs server-side because creating an
-// auth user requires the service-role key, which must never reach the
-// browser. The caller's own JWT is checked first so only 'Full' access
-// members can invite; the new user lands as 'Field only' via the
-// on_auth_user_created trigger and an admin promotes them afterward.
+// Sends a real invite email to a new (or existing roster-only) team member —
+// they click the link and set their own password. Runs server-side because
+// creating/inviting an auth user requires the service-role key, which must
+// never reach the browser. The caller's own JWT is checked first so only
+// 'Full' access members can invite.
+//
+// If the email matches an existing roster-only team_members row (added
+// directly, no login yet), the on_auth_user_created trigger links this new
+// auth user to that row instead of creating a duplicate. Otherwise it lands
+// as a new 'Field only' row, same as any other sign-up.
 //
 // Deploy: supabase functions deploy invite-member
 // Secrets (set once): supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...
@@ -37,7 +42,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
   }
 
-  const { data: caller } = await callerClient.from('team_members').select('access_level').eq('id', user.id).single();
+  const { data: caller } = await callerClient.from('team_members').select('access_level').eq('auth_user_id', user.id).single();
   if (caller?.access_level !== 'Full') {
     return new Response(JSON.stringify({ error: 'Only Full-access members can invite' }), { status: 403 });
   }

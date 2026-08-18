@@ -21,8 +21,9 @@ reference) — see that folder's `README.md` for the original design spec and
 ## Setup
 
 1. **Supabase** — follow [`supabase/README.md`](supabase/README.md): create
-   a project, run the migration + seed SQL, enable email/password auth,
-   create your first (admin) user, and deploy the `invite-member` function.
+   a project, run the migration + seed SQL, enable email/password auth, and
+   create your first (admin) user. (Deploying the `invite-member` function
+   is optional — only needed if you want to send real email invites.)
 2. **Web app**:
    ```bash
    cd web
@@ -82,8 +83,13 @@ secret.
 ## Design tokens
 
 `design-tokens.json` at the repo root is the single source of truth for
-colors, stage colors, and spacing — `web/src/index.css` (Tailwind `@theme`)
-mirrors it. If a color or stage changes, update both together.
+colors and spacing — `web/src/index.css` (Tailwind `@theme`) mirrors it. If a
+color changes, update both together.
+
+Pipeline stages are different: `stages` is a live database table, seeded
+with the design's 11 stages as a starting point, but from then on it's
+editable directly in Admin → Project stages (rename, recolor, add, delete,
+reorder) — not something you edit in code.
 
 ## What's not built yet
 
@@ -91,10 +97,12 @@ mirrors it. If a color or stage changes, update both together.
   placeholder SVG map with pins positioned from project lat/lng. Wiring a
   real provider (Mapbox / Google / Leaflet) needs you to pick one and
   supply an API key.
-- **Stage rename/add/remove in Admin.** Drag-to-reorder works; renaming,
-  recoloring, or adding stages doesn't have a UI yet (the "Edit" button is a
-  placeholder).
 - **`/m/jobs` and `/m/map`** are placeholder screens — only Today's
   schedule is fully built on the crew view so far.
+- **Phone-number sign-in.** Auth is email/password only. Supabase supports
+  SMS OTP login instead (no password, just a texted code), but it needs a
+  third-party SMS provider wired up (Twilio, Vonage, etc. — costs per text)
+  and changes to the login screen, schema (`team_members.email` would need
+  to allow phone-only), and the invite flow.
 - **Multi-tenant support.** Auth is single-company; see
   `supabase/README.md` for what that means for admin login.

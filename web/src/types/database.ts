@@ -9,17 +9,12 @@ export interface Stage {
   is_done: boolean;
 }
 
-export interface Crew {
-  id: string;
-  name: string;
-}
-
 export interface TeamMember {
   id: string;
+  auth_user_id: string | null;
   name: string;
-  email: string;
-  role: string;
-  crew_id: string | null;
+  email: string | null;
+  role: string | null;
   access_level: AccessLevel;
 }
 
@@ -31,16 +26,20 @@ export interface Project {
   client_contact: string | null;
   sqft: number;
   species: string;
-  crew_id: string | null;
   start_date: string | null;
   end_date: string | null;
-  budget: number;
+  next_time: string | null;
   stage_id: string;
   materials_list: unknown[];
   lat: number | null;
   lng: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProjectMember {
+  project_id: string;
+  team_member_id: string;
 }
 
 export interface ScheduleEvent {
@@ -55,7 +54,6 @@ export interface CompanySettings {
   id: true;
   business_name: string;
   service_area: string;
-  default_markup: number;
   crew_count: number;
 }
 
@@ -65,9 +63,9 @@ export type Database = {
   public: {
     Tables: {
       stages: { Row: Stage; Insert: Partial<Stage>; Update: Partial<Stage> };
-      crews: { Row: Crew; Insert: Partial<Crew>; Update: Partial<Crew> };
       team_members: { Row: TeamMember; Insert: Partial<TeamMember>; Update: Partial<TeamMember> };
       projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
+      project_members: { Row: ProjectMember; Insert: Partial<ProjectMember>; Update: Partial<ProjectMember> };
       schedule_events: { Row: ScheduleEvent; Insert: Partial<ScheduleEvent>; Update: Partial<ScheduleEvent> };
       company_settings: { Row: CompanySettings; Insert: Partial<CompanySettings>; Update: Partial<CompanySettings> };
     };

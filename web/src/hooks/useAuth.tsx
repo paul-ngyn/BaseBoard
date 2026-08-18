@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('team_members')
         .select('*')
-        .eq('id', session!.user.id)
+        .eq('auth_user_id', session!.user.id)
         .single();
       if (error) throw error;
       return data;
