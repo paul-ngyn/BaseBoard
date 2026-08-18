@@ -29,6 +29,8 @@ export interface Project {
   start_date: string | null;
   end_date: string | null;
   next_time: string | null;
+  position: number;
+  archived: boolean;
   stage_id: string;
   materials_list: unknown[];
   lat: number | null;

@@ -44,9 +44,24 @@ export function useProjects() {
       const { data, error } = await supabase
         .from('projects')
         .select('*, project_members(team_members(*))')
-        .order('created_at', { ascending: false });
+        .order('position');
       if (error) throw error;
       return data as ProjectWithMembers[];
+    },
+  });
+}
+
+export function useReorderProjects() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; position: number }[]) => {
+      const updates = items.map((p) => supabase.from('projects').update({ position: p.position }).eq('id', p.id));
+      const results = await Promise.all(updates);
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }
