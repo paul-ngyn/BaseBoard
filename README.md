@@ -97,6 +97,10 @@ reorder) — not something you edit in code.
   project happens inline in the Projects list/cards. A dedicated per-job page
   (click a row/card to open it) showing a timeline — stage history, schedule
   events, notes — would give more room than the table/card view allows.
+- **TODO: priority ordering for Projects/Schedule.** Right now finished jobs
+  (Complete / Invoiced / Paid stages) sit wherever they fall in the list
+  alongside active ones. Should sort so done jobs drop to the bottom, or move
+  to a separate "archived" view, so active work stays what you see first.
 - **Real map integration.** The Map view shows the design's stylized
   placeholder SVG map with pins positioned from project lat/lng. Wiring a
   real provider (Mapbox / Google / Leaflet) needs you to pick one and
