@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark } from '../components/BrandMark';
 import { Button } from '../components/Button';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 export function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,10 @@ export function Login() {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) setError(error);
-    else navigate('/projects');
+    else {
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(from ?? '/projects');
+    }
   }
 
   return (

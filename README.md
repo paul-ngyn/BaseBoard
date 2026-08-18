@@ -2,14 +2,17 @@
 
 A project-management tool for a hardwood flooring contractor: jobs tracked by
 address, moved through an 11-stage pipeline (Lead / Estimate → Invoiced /
-Paid). Two apps, one Supabase backend:
+Paid). One web app, one Supabase backend:
 
-- **`web/`** — office/owner app (React + Vite): Projects, Dashboard,
-  Schedule, Map, Admin.
-- **`mobile/`** — crew app (Expo / React Native): Today's schedule, with
-  Jobs / Map / More scaffolded for later.
+- **`web/`** — React + Vite app with two layouts:
+  - Office/owner desktop views: Projects, Dashboard, Schedule, Map, Admin.
+  - A mobile-only crew view at `/m/today` — see [Crew mobile view](#crew-mobile-view-m)
+    below — installable as a home-screen shortcut, no app store needed.
 - **`supabase/`** — schema, seed data, and the one server-side function
   (inviting a new team member).
+
+Realtime is wired up so a stage change or new job shows up on an
+already-open crew phone with no refresh needed.
 
 Built from the design handoff in `design_handoff_baseboard/` (kept for
 reference) — see that folder's `README.md` for the original design spec and
@@ -27,31 +30,71 @@ reference) — see that folder's `README.md` for the original design spec and
    npm install
    npm run dev
    ```
-3. **Mobile app**:
-   ```bash
-   cd mobile
-   cp .env.example .env               # fill in your Supabase URL + anon key
-   npm install
-   npx expo start
-   ```
+
+## Crew mobile view (`/m`)
+
+The web app has a second, mobile-only layout at `/m/today` — the crew's
+"Today's schedule" screen, but as a web page instead of a native app. No
+build, no store, no account.
+
+**To install it as a home-screen shortcut:**
+
+1. On the crew member's phone, open `https://<your-deployed-web-url>/m/today`
+   in Safari (iOS) or Chrome (Android).
+2. Tap the browser's share/menu button → **Add to Home Screen**.
+3. It now has a real "Baseboard" icon that opens full-screen, no browser
+   address bar — same as a native app to the person using it.
+
+Opening it always loads whatever's currently deployed (see
+[Deploying to production](#deploying-to-production) below) — no reinstall,
+no update prompt. And because of Realtime, if it's already open when an
+admin changes something, it updates on its own.
+
+`/m/jobs`, `/m/map`, and `/m/more` are scaffolded (More has profile + sign
+out); Jobs and Map are placeholders for now.
+
+## Deploying to production
+
+`npm run dev` is for local development only. To get a real, shareable URL:
+
+1. Go to [vercel.com](https://vercel.com) → **New Project** → import
+   `paul-ngyn/BaseBoard`.
+2. Set **Root Directory** to `web`. Vercel auto-detects the Vite build
+   command (`npm run build`) and output directory (`dist`) — leave those as
+   default.
+3. Add environment variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+   (same values as your `web/.env.local`).
+4. Deploy. You get a real `https://…vercel.app` URL immediately, and a
+   custom domain can be attached in Project Settings → Domains.
+
+(Netlify works the same way: base directory `web`, build command
+`npm run build`, publish directory `web/dist`.)
+
+That URL is also what crew members open on their phone to install the
+`/m/today` shortcut above.
+
+### Supabase Edge Function
+
+Already covered in [`supabase/README.md`](supabase/README.md) — `supabase
+functions deploy invite-member` plus setting the service-role key as a
+secret.
 
 ## Design tokens
 
 `design-tokens.json` at the repo root is the single source of truth for
 colors, stage colors, and spacing — `web/src/index.css` (Tailwind `@theme`)
-and `mobile/lib/theme.ts` both mirror it. If a color or stage changes, update
-all three together.
+mirrors it. If a color or stage changes, update both together.
 
 ## What's not built yet
 
-- **Real map integration.** Map views (web and mobile) show the design's
-  stylized placeholder SVG map with pins positioned from project lat/lng.
-  Wiring a real provider (Mapbox / Google / Leaflet) needs you to pick one
-  and supply an API key.
+- **Real map integration.** The Map view shows the design's stylized
+  placeholder SVG map with pins positioned from project lat/lng. Wiring a
+  real provider (Mapbox / Google / Leaflet) needs you to pick one and
+  supply an API key.
 - **Stage rename/add/remove in Admin.** Drag-to-reorder works; renaming,
   recoloring, or adding stages doesn't have a UI yet (the "Edit" button is a
   placeholder).
-- **Mobile Jobs / Map / More tabs** are placeholder screens — only Today's
-  schedule is fully built, per the design handoff's scope.
+- **`/m/jobs` and `/m/map`** are placeholder screens — only Today's
+  schedule is fully built on the crew view so far.
 - **Multi-tenant support.** Auth is single-company; see
   `supabase/README.md` for what that means for admin login.
