@@ -1,0 +1,54 @@
+{
+  "color": {
+    "canvas": "#e7ddcc",
+    "bg": "#f4efe6",
+    "surface": "#ece3d4",
+    "sidebarBg": "#efe7d8",
+    "text": "#2a2018",
+    "textSecondary": "#7a6a58",
+    "textSecondaryAlt": "#8a7860",
+    "textMuted": "#9a8367",
+    "textMutedAlt": "#b0a087",
+    "accent": "#8a5a2b",
+    "accent600": "#744a22",
+    "accent700": "#5e3b1a",
+    "divider": "rgba(42,32,24,.10)",
+    "dividerStrong": "rgba(42,32,24,.12)",
+    "paperLine": "rgba(42,32,24,.08)"
+  },
+  "stages": [
+    { "order": 1,  "name": "Lead / Estimate",     "bg": "#cbb488", "fg": "#3a2e18", "isDone": false },
+    { "order": 2,  "name": "Measure",             "bg": "#c39a5a", "fg": "#ffffff", "isDone": false },
+    { "order": 3,  "name": "Quote Sent",          "bg": "#d98f3d", "fg": "#3a2308", "isDone": false },
+    { "order": 4,  "name": "Approved",            "bg": "#b5701f", "fg": "#ffffff", "isDone": false },
+    { "order": 5,  "name": "Materials Ordered",   "bg": "#a9581f", "fg": "#ffffff", "isDone": false },
+    { "order": 6,  "name": "Scheduled",           "bg": "#8a6d3b", "fg": "#ffffff", "isDone": false },
+    { "order": 7,  "name": "Install In Progress", "bg": "#9c4a22", "fg": "#ffffff", "isDone": false },
+    { "order": 8,  "name": "Sanding / Finishing", "bg": "#7d5a2e", "fg": "#ffffff", "isDone": false },
+    { "order": 9,  "name": "Final Walkthrough",   "bg": "#5f6b3a", "fg": "#ffffff", "isDone": false },
+    { "order": 10, "name": "Complete",            "bg": "#4a7a44", "fg": "#ffffff", "isDone": true },
+    { "order": 11, "name": "Invoiced / Paid",     "bg": "#3c5f34", "fg": "#ffffff", "isDone": true }
+  ],
+  "access": {
+    "Full":        { "bg": "#3c5f34", "fg": "#ffffff" },
+    "Standard":    { "bg": "#8a6d3b", "fg": "#ffffff" },
+    "Field only":  { "bg": "#cbb488", "fg": "#3a2e18" }
+  },
+  "typography": {
+    "fontFamily": "\"Source Serif 4\", serif",
+    "h2Size": "29px",
+    "h4Size": "16px",
+    "metricValueSize": "32px",
+    "bodySize": "13px",
+    "bodySizeAlt": "14px"
+  },
+  "radius": {
+    "card": "10px",
+    "cardLg": "14px",
+    "pill": "100px",
+    "button": "7px"
+  },
+  "layout": {
+    "sidebarWidth": "224px"
+  }
+}

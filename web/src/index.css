@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+@import '@fontsource/source-serif-4/400.css';
+@import '@fontsource/source-serif-4/600.css';
+
+@theme {
+  --font-serif: 'Source Serif 4', serif;
+
+  --color-canvas: #e7ddcc;
+  --color-bg: #f4efe6;
+  --color-surface: #ece3d4;
+  --color-sidebar: #efe7d8;
+  --color-text: #2a2018;
+  --color-text-secondary: #7a6a58;
+  --color-text-secondary-alt: #8a7860;
+  --color-text-muted: #9a8367;
+  --color-text-muted-alt: #b0a087;
+  --color-accent: #8a5a2b;
+  --color-accent-600: #744a22;
+  --color-accent-700: #5e3b1a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  font-family: var(--font-serif);
+  color: var(--color-text);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairline divider used throughout tables/lists (design token: rgba(42,32,24,.08-.12)) */
+.divider {
+  border-color: rgba(42, 32, 24, 0.1);
+}
