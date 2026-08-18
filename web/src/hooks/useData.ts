@@ -107,30 +107,52 @@ export function useMonthSchedule(monthAnchor: Date) {
   return { ...query, gridStart, gridEnd };
 }
 
-export function useUpdateProjectDate() {
+// The sentinel label that marks "the schedule_events row synced from this
+// project's Next date/time" (set via ProjectDateCell or the New Project
+// form), as opposed to other schedule_events rows added directly on the
+// Schedule calendar (e.g. "Install day 2") which this must never touch.
+const NEXT_DATE_SYNC_LABEL = 'Scheduled visit';
+
+// Sets a project's next date/time AND keeps a matching schedule_events row
+// in sync, so it actually shows up on the Schedule calendar — previously
+// this only touched the projects row, so setting a date never appeared
+// anywhere else.
+export function useSetProjectSchedule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ projectId, date }: { projectId: string; date: string | null }) => {
-      const { error } = await supabase.from('projects').update({ start_date: date }).eq('id', projectId);
+    mutationFn: async ({ projectId, date, time }: { projectId: string; date: string | null; time: string | null }) => {
+      const { error } = await supabase.from('projects').update({ start_date: date, next_time: time }).eq('id', projectId);
       if (error) throw error;
+
+      const { error: deleteError } = await supabase
+        .from('schedule_events')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('label', NEXT_DATE_SYNC_LABEL);
+      if (deleteError) throw deleteError;
+
+      if (date) {
+        const { error: insertError } = await supabase.from('schedule_events').insert({
+          project_id: projectId,
+          event_date: date,
+          time_label: time ? formatTimeLabel(time) : 'TBD',
+          label: NEXT_DATE_SYNC_LABEL,
+        });
+        if (insertError) throw insertError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule_events'] });
     },
   });
 }
 
-export function useUpdateProjectTime() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ projectId, time }: { projectId: string; time: string | null }) => {
-      const { error } = await supabase.from('projects').update({ next_time: time }).eq('id', projectId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-    },
-  });
+function formatTimeLabel(time: string) {
+  const [h, m] = time.split(':').map(Number);
+  const period = h >= 12 ? 'p' : 'a';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m).padStart(2, '0')}${period}`;
 }
 
 export function useUpdateProjectField() {
@@ -171,9 +193,19 @@ export function useCreateProject() {
           .insert(memberIds.map((team_member_id) => ({ project_id: data.id, team_member_id })));
         if (memberError) throw memberError;
       }
+      if (project.start_date) {
+        const { error: eventError } = await supabase.from('schedule_events').insert({
+          project_id: data.id,
+          event_date: project.start_date,
+          time_label: project.next_time ? formatTimeLabel(project.next_time) : 'TBD',
+          label: NEXT_DATE_SYNC_LABEL,
+        });
+        if (eventError) throw eventError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule_events'] });
     },
   });
 }

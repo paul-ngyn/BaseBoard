@@ -19,6 +19,8 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
     sqft: '',
     species: '',
     stage_id: '',
+    start_date: '',
+    next_time: '',
   });
   const [memberIds, setMemberIds] = useState<string[]>([]);
 
@@ -38,6 +40,8 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
       sqft: Number(form.sqft) || 0,
       species: form.species,
       stage_id: stageId,
+      start_date: form.start_date || null,
+      next_time: form.next_time || null,
       memberIds,
     });
     onDone();
@@ -99,6 +103,28 @@ export function NewProjectForm({ onDone }: { onDone: () => void }) {
           ))}
         </select>
       </label>
+      <div className="flex gap-3">
+        <label className="flex flex-1 flex-col gap-1.5">
+          Next date <span className="text-text-muted">(optional)</span>
+          <input
+            type="date"
+            autoComplete="off"
+            className={inputClass}
+            value={form.start_date}
+            onChange={(e) => set('start_date', e.target.value)}
+          />
+        </label>
+        <label className="flex flex-1 flex-col gap-1.5">
+          Time <span className="text-text-muted">(optional)</span>
+          <input
+            type="time"
+            autoComplete="off"
+            className={inputClass}
+            value={form.next_time}
+            onChange={(e) => set('next_time', e.target.value)}
+          />
+        </label>
+      </div>
       <label className="flex flex-col gap-1.5">
         Crew on this job
         <PeoplePicker people={team} selected={memberIds} onChange={setMemberIds} />

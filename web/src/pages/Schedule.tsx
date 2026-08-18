@@ -51,12 +51,47 @@ export function Schedule() {
 
   const openDayEvents = openDay ? (eventsByDate.get(isoOf(openDay)) ?? []) : [];
 
+  // Agenda list (mobile): every day in the month, so it reads continuously —
+  // but consecutive empty days collapse into a single "17–21" range row
+  // instead of one line per day, like Google Calendar's Schedule view.
+  type Segment = { kind: 'event'; day: Date } | { kind: 'empty'; start: Date; end: Date };
+  const agendaSegments = useMemo(() => {
+    const inMonthDays: Date[] = [];
+    for (const week of weeks) {
+      for (const d of week) {
+        if (d.getMonth() === monthAnchor.getMonth()) inMonthDays.push(d);
+      }
+    }
+    const segments: Segment[] = [];
+    let emptyRun: Date[] = [];
+    const flushEmpty = () => {
+      if (emptyRun.length) {
+        segments.push({ kind: 'empty', start: emptyRun[0], end: emptyRun[emptyRun.length - 1] });
+        emptyRun = [];
+      }
+    };
+    for (const d of inMonthDays) {
+      const hasEvents = (eventsByDate.get(isoOf(d))?.length ?? 0) > 0;
+      if (hasEvents) {
+        flushEmpty();
+        segments.push({ kind: 'event', day: d });
+      } else {
+        emptyRun.push(d);
+      }
+    }
+    flushEmpty();
+    return segments;
+  }, [weeks, monthAnchor, eventsByDate]);
+
   return (
     <div className="px-4 pt-[26px] pb-[30px] lg:px-[30px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="m-0 mb-1 text-[29px]">Schedule</h2>
-          <p className="m-0 text-[13px] text-text-secondary">{monthLabel} · installs and visits</p>
+          <h2 className="m-0 mb-1 hidden text-[29px] lg:block">Schedule</h2>
+          <p className="m-0 font-serif text-[32px] leading-none font-semibold lg:hidden">{monthLabel}</p>
+          <p className="m-0 mt-1 text-[13px] text-text-secondary">
+            <span className="hidden lg:inline">{monthLabel} · </span>installs and visits
+          </p>
         </div>
         <div className="flex items-center gap-1.5">
           <Button variant="secondary" className="text-xs" onClick={() => setMonthAnchor(new Date())}>
@@ -82,8 +117,55 @@ export function Schedule() {
       {isLoading ? (
         <p className="mt-5 text-sm text-text-muted">Loading schedule…</p>
       ) : (
-        <div className="mt-5 overflow-x-auto">
-          <div className="min-w-[640px]">
+        <>
+          {/* Mobile: continuous agenda — every day, but a run of consecutive
+              empty days collapses into a single "17–21" range row instead of
+              one line per day (Google Calendar's Schedule view does the
+              same thing). */}
+          <div className="mt-4 flex flex-col lg:hidden">
+            {agendaSegments.map((seg) => {
+              if (seg.kind === 'empty') {
+                const rangeLabel =
+                  seg.start.getDate() === seg.end.getDate() ? `${seg.start.getDate()}` : `${seg.start.getDate()}–${seg.end.getDate()}`;
+                return (
+                  <div
+                    key={seg.start.toISOString()}
+                    className="flex items-center gap-2 border-b border-black/6 py-1.5 text-[11px] font-semibold tracking-[0.04em] text-text-muted uppercase"
+                  >
+                    {rangeLabel}
+                  </div>
+                );
+              }
+
+              const day = seg.day;
+              const dayEvents = eventsByDate.get(isoOf(day)) ?? [];
+              const isToday = sameDay(day, today);
+              return (
+                <div key={day.toISOString()} className="my-1 rounded-[10px] border border-black/8 bg-surface p-2.5">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.04em] uppercase">
+                    <span className={isToday ? 'rounded-full bg-accent px-1.5 py-0.5 text-bg' : 'text-text-muted'}>
+                      {DOW[day.getDay()]} {day.getDate()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {dayEvents.map((e) => {
+                      const { bg, fg } = eventStyle(e);
+                      return (
+                        <div key={e.id} className="flex items-center gap-2 rounded px-1.5 py-1" style={{ background: bg, color: fg }}>
+                          <span className="tabular-nums text-[10.5px] opacity-85">{e.time_label}</span>
+                          <span className="truncate text-[12px] font-semibold">{e.projects?.address ?? '—'}</span>
+                          <span className="truncate text-[10.5px] opacity-85">{e.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: full month grid */}
+          <div className="mt-5 hidden lg:block">
             <div className="grid grid-cols-7 border-b border-black/10 pb-2">
               {DOW.map((dow) => (
                 <div key={dow} className="text-center text-[11px] font-semibold tracking-[0.06em] text-text-muted uppercase">
@@ -137,7 +219,7 @@ export function Schedule() {
               ))}
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {openDay && (
